@@ -74,7 +74,21 @@ For this section of the exercise we will be using the `bigquery-public-data.aust
 
 11. Write a query to check if there are any duplicate values in the unique_key column (hint.. There are two was to do this, one is to use a temporary table for the groupby, then filter for values that have more than one count, or, using just one table but including the  `having` function). 
 	```
-	[YOUR QUERY HERE]
+	WITH
+      T AS (
+      SELECT
+        unique_key,
+        COUNT(unique_key) AS counts
+      FROM
+        `bigquery-public-data.austin_311.311_service_requests`
+      GROUP BY
+        unique_key)
+    SELECT
+      *
+    FROM
+      T
+    WHERE
+      counts > 1
 	```
 
 
@@ -129,7 +143,7 @@ For this section of the exercise we will be using the `bigquery-public-data.aust
 	2020-02-23
 	```
 
-4. Using the `advertiser_weekly_spend` table, write a query that returns the sum of spend by week (using week_start_date) in usd for the month of August only. 
+4. Using the `advertiser_weekly_spend` table, write a query that returns the sum of spend by week (using week_start_date) in usd for the month of August in 2020 only. 
 	```
 	WITH
       T AS(
@@ -144,7 +158,11 @@ For this section of the exercise we will be using the `bigquery-public-data.aust
       *
     FROM
       T
-    WHERE month(week_start_date) = 8 //month doesn't work
+    WHERE
+      week_start_date >= '2020-08-01'
+      AND week_start_date <= '2020-08-31'
+    ORDER BY
+      week_start_date
 	```
 6.  How many ads did the 'TOM STEYER 2020' campaign run? (No need to insert query here, just type in the answer.)
 	```
@@ -152,7 +170,33 @@ For this section of the exercise we will be using the `bigquery-public-data.aust
 	```
 7. Write a query that has, in the US region only, the total spend in usd for each advertiser_name and how many ads they ran. (Hint, you're going to have to join tables for this one). 
 	```
-		[YOUR QUERY HERE]
+		WITH
+          ads_run AS(
+          SELECT
+            advertiser_name,
+            COUNT(advertiser_name) AS ads
+          FROM
+            `bigquery-public-data.google_political_ads.advertiser_weekly_spend`
+          GROUP BY
+            advertiser_name ),
+          total_spend AS(
+          SELECT
+            advertiser_name,
+            SUM(spend_usd) AS sumSpend
+          FROM
+            `bigquery-public-data.google_political_ads.advertiser_weekly_spend`
+          GROUP BY
+            advertiser_name )
+        SELECT
+          A.advertiser_name,
+          A.ads,
+          B.sumSpend
+        FROM
+          ads_run AS A
+        JOIN
+          total_spend AS B
+        ON
+          A.advertiser_name = B.advertiser_name
 	```
 8. For each advertiser_name, find the average spend per ad. 
 	```
@@ -199,12 +243,43 @@ For this section of the exercise we will be using the `bigquery-public-data.aust
 	```
 2. What was the average, shortest, and longest bike trip taken in minutes?
 	```
-	[YOUR QUERY HERE]
+	SELECT
+      MAX(tripduration / 60) AS longestTrip,
+      MIN(tripduration / 60) AS shortestTrip,
+      AVG(tripduration / 60) AS averageTrip
+    FROM
+      `bigquery-public-data.new_york_citibike.citibike_trips`
 	```
 
 3. Write a query that, for every station_name, has the amount of trips that started there and the amount of trips that ended there. (Hint, use two temporary tables, one that counts the amount of starts, the other that counts the number of ends, and then join the two.) 
 	```
-	[YOUR QUERY HERE]
+	WITH
+      starts AS(
+      SELECT
+        start_station_name,
+        COUNT(start_station_name) AS start
+      FROM
+        `bigquery-public-data.new_york_citibike.citibike_trips`
+      GROUP BY
+        start_station_name),
+      ends AS(
+      SELECT
+        end_station_name,
+        COUNT(end_station_name) AS ended
+      FROM
+        `bigquery-public-data.new_york_citibike.citibike_trips`
+      GROUP BY
+        end_station_name)
+    SELECT
+      A.start_station_name,
+      A.start,
+      B.ended
+    FROM
+      starts AS A
+    JOIN
+      ends AS B
+    ON
+      A.start_station_name = B.end_station_name
 	```
 # The next section is the Google Colab section.  
 1. Open up this [this Colab notebook](https://colab.research.google.com/drive/1kHdTtuHTPEaMH32GotVum41YVdeyzQ74?usp=sharing).
